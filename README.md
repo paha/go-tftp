@@ -75,4 +75,4 @@ TFTP
 Feel free to reach out with comments etc.
 
 [1]: https://tools.ietf.org/html/rfc1350
-[2]; https://www.igneous.io/
+[2]: https://www.igneous.io/
