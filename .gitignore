@@ -1,0 +1,14 @@
+.*.swp
+*~
+.*#
+.vscode
+.DS_Store
+.Trashes
+.cache
+.notes
+
+*.o
+*.a
+*.so
+_obj
+_test
