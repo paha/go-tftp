@@ -64,9 +64,8 @@ func main() {
 	registryLogger.Print("Server started.")
 
 	go flush(500) // 500 milliseconds ticks period
-
-	buf := make([]byte, tftp.MaxPacketSize)
 	for {
+		buf := make([]byte, tftp.MaxPacketSize)
 		n, addr, err := conn.ReadFrom(buf)
 		if err != nil {
 			logger.Printf("Error: %s", err)
