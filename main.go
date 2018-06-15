@@ -29,7 +29,7 @@ var (
 	registryFile  string
 
 	inFlight       map[string]transfer
-	store          map[string]transfer
+	store          map[string][]byte
 	logger         *log.Logger
 	registryLogger *log.Logger
 
@@ -45,7 +45,7 @@ func init() {
 	// Active transfers.
 	inFlight = make(map[string]transfer)
 	// TFTP datasotore.
-	store = make(map[string]transfer)
+	store = make(map[string][]byte)
 }
 
 func main() {

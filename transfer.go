@@ -25,9 +25,7 @@ var (
 )
 
 // transfer defines active file transfer
-// NOTE:
-// 	1. Used as an object for the store. Waist of space though.
-//	2. For outgoing active transfers host:port string is used instead of a
+// NOTE: For outgoing active transfers host:port string is used instead of a
 // 		filename to provide uniq identifier.
 type transfer struct {
 	lastOp   time.Time
@@ -94,7 +92,7 @@ func rrqHandler(conn net.PacketConn, p tftp.Packet, addr net.Addr) {
 	pkt := p.(*tftp.PacketRequest)
 
 	lock.Lock()
-	t, ok := store[pkt.Filename]
+	fileData, ok := store[pkt.Filename]
 	lock.Unlock()
 	if !ok {
 		logger.Printf("%s isn't found. Client %v", pkt.Filename, addr)
@@ -102,13 +100,16 @@ func rrqHandler(conn net.PacketConn, p tftp.Packet, addr net.Addr) {
 		sendError(1, addr, conn)
 		return
 	}
-	logger.Printf("Sending %s to %v", t.filename, addr)
+	logger.Printf("Sending %s to %v", pkt.Filename, addr)
 	registryLogger.Printf("RRQ for %s from %v. Sending...", pkt.Filename, addr)
 
-	t.blockNum = 1
-	t.addr = addr
-	t.conn = conn
-	t.filename = addr.String()
+	t := transfer{
+		blockNum: 1,
+		addr:     addr,
+		conn:     conn,
+		data:     fileData,
+		filename: addr.String(),
+	}
 	var data []byte
 	if len(t.data) >= maxDataSize {
 		data = t.data[:maxDataSize]
@@ -137,8 +138,7 @@ func dataHandler(conn net.PacketConn, p tftp.Packet, addr net.Addr, n int) {
 
 	// Trim NULL characters
 	d := bytes.Trim(pkt.Data, "\x00")
-	// TODO: investigate where the extra bytes on the last block come from,
-	//		had to limit to expected size of data (d[:n])
+	// The buffer is reused, so leftovers have to be cut out - (d[:n])
 	t.data = append(t.data, d[:n]...)
 	t.blockNum++
 	res := tftp.PacketAck{BlockNum: pkt.BlockNum}
@@ -146,7 +146,7 @@ func dataHandler(conn net.PacketConn, p tftp.Packet, addr net.Addr, n int) {
 
 	lock.Lock()
 	if n < maxDataSize {
-		store[t.filename] = t
+		store[t.filename] = t.data
 		delete(inFlight, t.filename)
 		logger.Printf("Finished receiving %s from %v", t.filename, addr)
 	} else {
